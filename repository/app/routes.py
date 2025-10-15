@@ -27,6 +27,7 @@ from datetime import datetime
 from .config import verify_token
 from fastapi.security import HTTPBearer, OAuth2PasswordBearer
 from app.auth import validate_user_id
+from firebase_admin import auth
 
 auth_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
@@ -45,7 +46,13 @@ def get_token_from_header(request: Request):
     return {"token": token}
 
 # Define a simple root endpoint
-
+def verify_token(id_token):
+    try:
+        decoded_token = auth.verify_id_token(id_token)
+        return decoded_token
+    except Exception as e:
+        print("Error verifying token:", e)
+        return None
 
 @router.get("/", tags=["General"])
 def read_main(request: Request):
@@ -58,10 +65,14 @@ def read_main(request: Request):
 @router.post("/RegisterUser/{user_id}", tags=["User"])
 async def register_user(user_id: str, User: UserRegister, request: Request):
     headers = request.headers
-    jwt = headers.get('Authorization')
-    if not jwt:
-        raise HTTPException(
-            status_code=401, detail="Authorization header missing")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+    jwt = auth_header.split("Bearer ")[1]
     user = verify_token(jwt)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -72,10 +83,15 @@ async def register_user(user_id: str, User: UserRegister, request: Request):
 @router.get("/getUser/{user_id}", tags=["User"])
 async def get_user(user_id: str, request: Request):
     headers = request.headers
-    jwt = headers.get('Authorization')
-    if not jwt:
-        raise HTTPException(
-            status_code=401, detail="Authorization header missing")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+    jwt = auth_header.split("Bearer ")[1]
+
     user = verify_token(jwt)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -87,10 +103,14 @@ async def get_user(user_id: str, request: Request):
 @router.put("/update_user/{user_id}", tags=["User"])
 async def update_user_data(user_id: str, user_data: UpdateUserData, request: Request):
     headers = request.headers
-    jwt = headers.get('Authorization')
-    if not jwt:
-        raise HTTPException(
-            status_code=401, detail="Authorization header missing")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+    jwt = auth_header.split("Bearer ")[1]
     user = verify_token(jwt)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
@@ -103,10 +123,14 @@ async def update_user_data(user_id: str, user_data: UpdateUserData, request: Req
 @router.delete("/delete_user/{id_user}", tags=["User"])
 async def delete_user(id_user: str, request: Request):
     headers = request.headers
-    jwt = headers.get('Authorization')
-    if not jwt:
-        raise HTTPException(
-            status_code=401, detail="Authorization header missing")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+    jwt = auth_header.split("Bearer ")[1]
     user = verify_token(jwt)
     validate_user_id(jwt, id_user)
     if not user:
@@ -120,10 +144,14 @@ async def delete_user(id_user: str, request: Request):
 @router.post("/Food_log/", tags=["Food"])
 async def register_food(Food: Food, request: Request):
     headers = request.headers
-    jwt = headers.get('Authorization')
-    if not jwt:
-        raise HTTPException(
-            status_code=401, detail="Authorization header missing")
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization header format")
+
+    jwt = auth_header.split("Bearer ")[1]
     user = verify_token(jwt)
     if not user:
         raise HTTPException(status_code=401, detail="Invalid token")
