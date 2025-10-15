@@ -3,10 +3,7 @@ from ..config import db
 
 def create_category(category):
     try:
-        # Convert the Pydantic model to a dictionary
         category_data_dict = category.dict()
-
-        # Add the document to Firestore
         new_Usercategory_ref = db.collection('Category').document()
         new_Usercategory_ref.set(category_data_dict)
 

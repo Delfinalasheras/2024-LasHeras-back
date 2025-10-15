@@ -36,7 +36,6 @@ def delete_cateFoodByCategory(id_cat):
         
         for categorie in user_categories:
             catFood_ref = db.collection('CatFood').document(categorie.id)
-            print(catFood_ref)
             catFood_ref.delete()
         
         return {"message": "catFood delete succefully"}
