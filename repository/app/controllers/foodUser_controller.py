@@ -74,7 +74,7 @@ def update_userFood_controller(user_id: str, userFood_id: str, userFood_data: Us
     meal_ids = [meal["id"] for meal in meals['message']['foods']]
     if userFood_id not in meal_ids:
         raise HTTPException(
-            status_code=404, detail="The provided userFood_id does not exist in user's meals"
+            status_code=404, detail="The Food is not from this user or it doesnt exists in the user meal"
         )
     if user_id != userFood_data.id_User:
         raise HTTPException(

@@ -8,11 +8,11 @@ from firebase_admin import firestore
 def create_plate(plate_data):
     try:
         # Convert the Pydantic model to a dictionary
-        plate_data_dict = plate_data.dict()
+
 
         # Add the document to Firestore
         new_Plate_ref = db.collection('Plate').document()
-        new_Plate_ref.set(plate_data_dict)
+        new_Plate_ref.set(plate_data)
 
         return new_Plate_ref.id
     except Exception as e:

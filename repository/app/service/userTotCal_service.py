@@ -5,18 +5,17 @@ from datetime import timedelta, datetime
 def createUserTotCal_service(userTotCal):
     
     try:
-        totCal_data_dict = userTotCal.dict()
         new_totCal = db.collection('UserTotalCal').document()
-        new_totCal.set(totCal_data_dict)
+        new_totCal.set(userTotCal)
         return {"message": "New Total added successfully", "id": new_totCal.id}
     except Exception as e:
         return {"error": str(e)}
 
 def updateDailyCalories(calPerDay_id, macros_data):
     try:
-        updated_data = macros_data.dict()
+        # updated_data = macros_data.dict()
         Macros_ref = db.collection('UserTotalCal').document(calPerDay_id)
-        Macros_ref.update(updated_data)
+        Macros_ref.update(macros_data)
 
         return {"message": "Macros updated successfully"}
     except Exception as e:

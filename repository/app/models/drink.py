@@ -9,4 +9,3 @@ class Drink(BaseModel):
     measure_portion: int
     measure: str
     typeOfDrink: str
-    id_User: str

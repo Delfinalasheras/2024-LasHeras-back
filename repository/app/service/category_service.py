@@ -1,15 +1,16 @@
 from ..config import db
 
 
-def create_category(category):
+def create_category(category_data: dict):
     try:
-        category_data_dict = category.dict()
+        print("Attempting to save to Firestore:", category_data)
         new_Usercategory_ref = db.collection('Category').document()
-        new_Usercategory_ref.set(category_data_dict)
-
-        return {"message": "category added successfully to user", "id": new_Usercategory_ref.id}
+        new_Usercategory_ref.set(category_data)
+        print("Category saved successfully with ID:", new_Usercategory_ref.id)
+        return {"message": "Category added successfully", "id": new_Usercategory_ref.id}
     except Exception as e:
-        return {"error": str(e)}
+        print("Firestore error:", str(e))
+        return {"error": f"Failed to create category: {str(e)}"}
 
 
 def get_user_categories(user_id):
@@ -30,14 +31,15 @@ def get_user_categories(user_id):
 
 
 def update_category(category_id, updated_category_data):
-    try:
-        updated_data = updated_category_data.dict()
-        category_ref = db.collection('Category').document(category_id)
-        category_ref.update(updated_data)
-
-        return {"message": "Category updated successfully"}
-    except Exception as e:
-        return {"error": str(e)}
+      try:
+          updated_data = updated_category_data.dict()
+          print("📦 Updating with:", updated_data)
+          category_ref = db.collection('Category').document(category_id)
+          category_ref.update(updated_data)
+          return {"message": "Category updated successfully"}
+      except Exception as e:
+          print("❌ Update error:", str(e))
+          return {"error": str(e)}
 
 
 def delete_category_service(id_category):

@@ -3,6 +3,7 @@ from app.models.category import Category
 from app.controllers.food_controller import get_foods
 from app.service.plate_service import get_plates
 from app.service.drink_service import drinks
+from app.config import db
 from fastapi import HTTPException
 import re
 
@@ -22,50 +23,28 @@ def validate_name(campo, label):
             status_code=400, detail=f"Invalid format for {label}. Only letters and spaces allowed.")
 
 
-def validate_category_data(user_id: str, category: Category):
-    if user_id != category.id_User:
-        raise HTTPException(
-            status_code=400, detail="id_User is not valid "
-        )
-    validate_name(category.name, 'Name')
-    if category.icon not in icons:
-        raise HTTPException(
-            status_code=400, detail="Icon not valid "
-        )
-    foods = get_foods()
-    existing_food_ids = [food["id"]
-                         for food in foods["message"]['food']]
-    for food in category.foods:
-        if food not in existing_food_ids:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid food ID: {food}")
-
-    user_drinks = drinks(user_id)
-    existing_drinks_ids = [drink["id"] for drink in user_drinks['Drinks']]
-    for drink in category.drinks:
-        if drink not in existing_drinks_ids:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid drink ID: {drink}")
-
-    plates = get_plates()
-    existing_plate_ids = [plate["id"] for plate in plates]
-    for plate in category.plates:
-        if plate not in existing_plate_ids:
-            raise HTTPException(
-                status_code=400, detail=f"Invalid plate ID: {plate}")
-
-    if not category.foods and not category.plates and not category.drinks:
-        raise HTTPException(
-            status_code=400,
-            detail="At least one of 'foods', 'plates', or 'drinks' must contain data"
-        )
+def validate_category_data(category: Category):
+    if not category.name.strip():
+        raise HTTPException(status_code=400, detail="Category name cannot be empty.")
+    if not category.icon.strip():
+        raise HTTPException(status_code=400, detail="Category icon cannot be empty.")
+    if not category.foods:
+        raise HTTPException(status_code=400, detail="Category must have at least one food.")
 
 
-def userCategoryLog(user_id: str, category: Category):
-    validate_category_data(user_id, category)
-    response = create_category(category)
+
+def userCategoryLog(user_id: str, category):
+    validate_category_data(category)  # Ensure this is defined or remove if not needed
+    
+    category_data = category if isinstance(category, dict) else category.dict()
+    category_data["id_User"] = user_id
+    
+    print("📦 Category to save:", category_data)
+    response = create_category(category_data)
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
+    return response
+
 
 
 def get_category(user_id: str):
@@ -74,24 +53,27 @@ def get_category(user_id: str):
         raise HTTPException(status_code=500, detail=response["error"])
     return {"message": response}
 
-
 def update_category_controller(user_id: str, category_id: str, updated_category_data: Category):
-    categories = get_category(user_id)[
-        'message']['categories'] + get_category("default")['message']['categories']
-    print(categories)
-    existing_categories_ids = [category["id"] for category in categories]
-    if category_id not in [existing_categories_ids]:
-        raise HTTPException(
-            status_code=400, detail=f"Invalid category ID: {category_id}")
-    if updated_category_data.id_User != user_id:
-        raise HTTPException(
-            status_code=400, detail="The user id must not be changed")
-    validate_category_data(user_id, updated_category_data)
-    response = update_category(category_id, updated_category_data)
-    if "error" in response:
-        raise HTTPException(status_code=500, detail=response["error"])
-    return {"message": response}
-
+      # Fetch the specific category
+      try:
+          category_ref = db.collection('Category').document(category_id)
+          category_doc = category_ref.get()
+          if not category_doc.exists:
+              raise HTTPException(status_code=400, detail=f"Category with ID {category_id} not found")
+          category = category_doc.to_dict()
+          if category.get('id_User') != user_id:
+              raise HTTPException(status_code=403, detail="You can only update your own categories")
+      except Exception as e:
+          raise HTTPException(status_code=500, detail=f"Error fetching category: {str(e)}")
+      
+      # Validate
+      validate_category_data(updated_category_data)
+      
+      # Update
+      response = update_category(category_id, updated_category_data)
+      if "error" in response:
+          raise HTTPException(status_code=500, detail=response["error"])
+      return {"message": response}
 
 def delete_category(id_user: str, category_id: str):
     categories = get_category(id_user)

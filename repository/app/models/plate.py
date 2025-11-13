@@ -8,7 +8,6 @@ class PlateFood(BaseModel):
 
 
 class Plate(BaseModel):
-    id_User: str
     name: str
     ingredients: List[PlateFood]
     calories_portion: float

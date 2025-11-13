@@ -52,3 +52,5 @@ class UpdateUserData(BaseModel):
     goals: UserGoals
     validation: int
     achievements: List[int]
+class GoalRequest(BaseModel):
+    achivement_id: int 

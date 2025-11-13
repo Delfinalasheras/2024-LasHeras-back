@@ -29,10 +29,10 @@ def validate_food(food: Food):
     validate_name(food.name, 'Name')
     validate_name(food.measure, 'Measure')
     validate_limit(food.calories_portion, 0, 'calories_portion')
-    validate_limit(food.amount_carbs, 0, 'amount_carbs')
-    validate_limit(food.amount_sodium, 0, 'amount_sodium')
-    validate_limit(food.amount_fat, 0, 'amount_fat')
-    validate_limit(food.amount_protein, 0, 'amount_protein')
+    validate_limit(food.carbohydrates_portion, 0, 'carbohydrates_portion')
+    validate_limit(food.sodium_portion, 0, 'sodium_portion')
+    validate_limit(food.fats_portion, 0, 'fats_portion')
+    validate_limit(food.protein_portion, 0, 'protein_portion')
 
 
 def register_new_food(food: Food):
