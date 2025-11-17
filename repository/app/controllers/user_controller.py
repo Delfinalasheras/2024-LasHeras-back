@@ -67,12 +67,14 @@ def login(user: UserLogin):
 # Controlador para registrar un nuevo usuario
 
 
-def userLog(user: UserRegister):
-    validate_data_user(user)
-    response = create_user(user)
-    if "error" in response:
-        raise HTTPException(status_code=500, detail=response["error"])
-    return {"message": "User registered successfully"}
+def userLog(user: UserRegister, user_id: str):
+    validate_data_user(user)   # Your existing validations
+
+    user_data = user.dict()
+    user_data["id_user"] = user_id
+
+    return create_user(user_data)
+
 
 
 def delete_user_by_id(user_id: str):
@@ -138,6 +140,7 @@ def get_current_user(request: Request):
 
 def update_user_info(user_id: str, user_data: UpdateUserData):
     verification = get_user_by_id(user_id)
+    validate_data_user(user_data)
     if not verification:
         raise HTTPException(status_code=404, detail="User not found")
     if (validate_data_user(user_data)):
@@ -168,3 +171,4 @@ def addGoal(user_id: str, goal_id: int):
     if "error" in response:
         raise HTTPException(status_code=400, detail=response["error"])
     return response
+

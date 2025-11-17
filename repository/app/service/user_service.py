@@ -35,26 +35,28 @@ def login_user(user_data):
 # Crear un nuevo usuario en Firestore
 
 
-def create_user(user_data: UserRegister):
+def create_user(user_data: dict):
     try:
-        user_ref = db.collection('User').document(
-            user_data.id_user)  # Usa id_user como ID del documento
+
+        user_ref = db.collection("User").document(user_data["id_user"])
+
         user_ref.set({
-            "id_user": user_data.id_user,
-            "name": user_data.name,
-            "surname": user_data.surname,
-            "weight": user_data.weight,
-            "height": user_data.height,
-            "birthDate": user_data.birthDate,
-            "goals": user_data.goals.dict(),  # Convierte UserGoals a diccionario
-            "validation": user_data.validation,
-            "achievements": user_data.achievements,
-            "allergies": user_data.allergies,
+            "id_user": user_data["id_user"],
+            "email": user_data["email"],
+            "name": user_data["name"],
+            "surname": user_data["surname"],
+            "weight": user_data["weight"],
+            "height": user_data["height"],
+            "birthDate": user_data["birthDate"],
+            "goals": user_data["goals"],          # already dict
+            "validation": user_data["validation"],
+            "achievements": user_data["achievements"],
         })
 
         return {"message": "User created and data saved successfully"}
+
     except Exception as e:
-        return {"Eror create_user in user_service.py": str(e)}
+        return {"error": str(e)}
 
 
 def delete_user(user_id):
@@ -311,3 +313,18 @@ def complete_goal(user_id, goal_id):
         return {"error": str(e)}
 
     return {"message": "Goal completed and notification sent"}
+
+def get_user_goals(user_id):
+    try:
+        user_ref = db.collection('User').where(
+            'id_user', '==', user_id).stream()
+
+        for user in user_ref:
+            user_data = user.to_dict()
+            goals = user_data.get('goals', {})
+            return goals
+
+        return {"error": "User not found"}
+
+    except Exception as e:
+        return {"error": str(e)}

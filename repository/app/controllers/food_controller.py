@@ -15,6 +15,35 @@ def validate_name(campo, label):
         raise HTTPException(
             status_code=400, detail=f"Invalid format for {label}. Only letters and spaces allowed.")
 
+def validate_timeDay(timeDay):
+    if not isinstance(timeDay, list):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay must be a list"
+        )
+
+    if len(timeDay) == 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay cannot be empty"
+        )
+
+    if any((type(x) is not int) for x in timeDay):
+        raise HTTPException(
+            status_code=400, 
+            detail="All values in timeDay must be integers"
+        )
+
+    if any(x < 1 or x > 4 for x in timeDay):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay values must be between 1 and 4"
+        )
+    if len(timeDay) != len(set(timeDay)):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay contains duplicated values"
+        )
 
 def validate_limit(campo, minimo, label):
     if type(campo) is not float:
@@ -33,6 +62,8 @@ def validate_food(food: Food):
     validate_limit(food.sodium_portion, 0, 'sodium_portion')
     validate_limit(food.fats_portion, 0, 'fats_portion')
     validate_limit(food.protein_portion, 0, 'protein_portion')
+    validate_timeDay(food.timeDay)   # <-- NUEVO
+
 
 
 def register_new_food(food: Food):
@@ -64,3 +95,5 @@ def get_food_by_id(food_id: str):
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return {"message": response}
+def recomendations_user(user_id: str):
+    pass

@@ -34,7 +34,35 @@ def validate_verified(campo, minimo, label):
     if not (minimo <= campo):
         raise HTTPException(
             status_code=400, detail=f"{label} must be grater than {minimo}")
+def validate_timeDay(timeDay):
+    if not isinstance(timeDay, list):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay must be a list"
+        )
 
+    if len(timeDay) == 0:
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay cannot be empty"
+        )
+
+    if any((type(x) is not int) for x in timeDay):
+        raise HTTPException(
+            status_code=400, 
+            detail="All values in timeDay must be integers"
+        )
+
+    if any(x < 1 or x > 4 for x in timeDay):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay values must be between 1 and 4"
+        )
+    if len(timeDay) != len(set(timeDay)):
+        raise HTTPException(
+            status_code=400, 
+            detail="timeDay contains duplicated values"
+        )
 
 def validate_plate_data(plate: Plate):
     validate_name(plate.name, "name")
@@ -44,6 +72,7 @@ def validate_plate_data(plate: Plate):
     validate_limit(plate.fats_portion, 0, "fats_portion")
     validate_limit(plate.protein_portion, 0, "protein_portion")
     validate_verified(plate.verified, 0, "verified")
+    validate_timeDay(plate.timeDay)
     if not plate.ingredients:
         raise HTTPException(
             status_code=400, detail=f"The plate must to have at least one ingredient")

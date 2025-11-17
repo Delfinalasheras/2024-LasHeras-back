@@ -2,7 +2,8 @@ from app.service.userTotCal_service import (
     updateDailyCalories,
     createUserTotCal_service,
     get_totalCAL,
-    count_recent_consecutive_days_with_calories
+    count_recent_consecutive_days_with_calories,
+    get_total
 )
 from app.models.userTotCal import CalUpdateModel, UserTotCal
 from fastapi import HTTPException
@@ -50,7 +51,15 @@ def validate_totcal_data(userTotCal):
 
 def createUserTotCal(user_id: str, userTotCal: UserTotCal):
     validate_totcal_data(userTotCal)
+    existing_docs = get_total(user_id, userTotCal.day)
+    if isinstance(existing_docs, dict) and "error" in existing_docs:
+        raise HTTPException(status_code=500, detail=existing_docs["error"])
 
+    if len(existing_docs) > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="A calorie record for this user and day already exists."
+        )
     totcal_data = userTotCal.dict()
     totcal_data["id_user"] = user_id
 
@@ -59,6 +68,7 @@ def createUserTotCal(user_id: str, userTotCal: UserTotCal):
         raise HTTPException(status_code=500, detail=response["error"])
 
     return {"message": "Total calories created successfully!"}
+
 
 
 def get_TotCal(user_id: str):
@@ -73,3 +83,10 @@ def get_streak(user_id: str):
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return {"message": response}
+
+def get_totcal_day(user_id: str, day: datetime):
+    response = get_total(user_id, day)
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+    return {"message": response}
+

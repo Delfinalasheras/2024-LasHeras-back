@@ -10,3 +10,4 @@ class Food(BaseModel):
     sodium_portion: float = Field(..., ge=0)
     fats_portion: float = Field(..., ge=0)
     protein_portion: float = Field(..., ge=0)
+    timeDay: list[int] = Field(default_factory=list)

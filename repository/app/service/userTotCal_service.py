@@ -79,6 +79,37 @@ def count_recent_consecutive_days_with_calories(user_id):
 
     except Exception as e:
         return {"error": str(e)}
+def get_total(user_id: str, date: datetime):
+    try:
+        start = datetime(date.year, date.month, date.day)
+        end = start + timedelta(days=1)
+
+        docs = db.collection('UserTotalCal')\
+            .where('id_user', '==', user_id)\
+            .stream()
+
+        results = []
+        for doc in docs:
+            d = doc.to_dict()
+            day = d.get('day')
+
+            # Convertir Firestore timestamp (aware) a naive
+            if day:
+                day = day.replace(tzinfo=None)
+
+            if day and start <= day < end:
+                d["id"] = doc.id
+                results.append(d)
+
+        if not results:
+            return []
+
+        return results
+
+    except Exception as e:
+        print("Error:", e)
+        return {"error": str(e)}
+
 
 
 

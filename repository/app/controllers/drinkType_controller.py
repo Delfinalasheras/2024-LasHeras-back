@@ -2,9 +2,19 @@ from app.service.drinkType_service import create_drinkType, drinkType, drinkType
 from app.models.drinkType import DrinkType
 from fastapi import HTTPException
 
-
-def register_new_drinkType(drinkType: DrinkType):
-    response = create_drinkType(drinkType.dict())
+def validate_drinktype_data(drinkType: DrinkType):
+    required_fields = [
+        "name",
+    ]
+    for field in required_fields:
+        value = getattr(drinkType, field, None)
+        if value is None or (isinstance(value, str) and not value.strip()):
+            raise HTTPException(status_code=400, detail=f"Field '{field}' is required and cannot be empty")
+def register_new_drinkType(user_id,drinkType: DrinkType):
+    validate_drinktype_data(drinkType)
+    drink_data = drinkType.dict()
+    drink_data["id_user"] = user_id
+    response = create_drinkType(drink_data)
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return {"message": "drinkType registered successfully", "drinkType_id": response["id"]}

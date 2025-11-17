@@ -18,3 +18,4 @@ class Plate(BaseModel):
     image: str
     public: bool = False
     verified: int = 0
+    timeDay: List[int] = Field(default_factory=list)

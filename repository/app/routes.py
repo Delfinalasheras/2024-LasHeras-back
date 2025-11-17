@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, Request, HTTPException
 from app.models.food import Food
 from app.controllers.user_controller import userLog,addGoal,update_user_info, delete_user_by_id, user_by_id, resetPassword,update_user_validation,get_all_Users
-from app.controllers.userTotCal_controller import updateDailyCalories_controller, createUserTotCal, get_TotCal, get_streak
+from app.controllers.userTotCal_controller import get_totcal_day,updateDailyCalories_controller, createUserTotCal, get_TotCal, get_streak
 from app.controllers.food_controller import register_new_food, get_foods, get_food_by_id
+from app.controllers.recomendations_controller import get_recommendations
 from app.controllers.category_controller import userCategoryLog, get_category, update_category_controller, delete_category
 from app.controllers.catFood_controller import CategoryFoodLog, get_Food_perCat, delete_Catfood, delete_AllCatfoodByCategory
 from app.controllers.plate_controller import get_publicPlates_notUser,update_user_plates_to_verified,plateLog, get_plate_user, delete_plate, update_Plate, get_platebyID, get_publicPlates
@@ -59,10 +60,15 @@ def read_main(current_user: dict = Depends(get_current_user)):
 
 # User endpoints
 @router.post("/RegisterUser", tags=["User"])
-async def register_user(User: UserRegister, current_user: dict = Depends(get_current_user)):
-    user_id = current_user['uid']
-    userLog(User, user_id)
-    return {"message": "User log added!"}
+async def register_user(user: UserRegister, current_user: dict = Depends(get_current_user)):
+    user_id = current_user["uid"]
+    response = userLog(user, user_id)
+
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+
+    return {"message": "User registered successfully!"}
+
 
 
 @router.get("/getUser", tags=["User"])
@@ -209,6 +215,18 @@ async def UpdateUserTotCal_log(calPerDay_id: str, calUpdate: UserTotCal, current
 async def get_Totcal_user( current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
     return get_TotCal(user_id)
+
+@router.get("/getTotCalDay/{day}", tags=['Food'])
+async def get_Totcal_day(day: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+
+    # Convertir string → datetime
+    try:
+        day_dt = datetime.strptime(day, "%Y-%m-%d")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de fecha inválido. Use YYYY-MM-DD.")
+
+    return get_totcal_day(user_id, day_dt)
 # PLATE ROUTES
 
 
@@ -325,23 +343,24 @@ async def UpdateUserTotCal_log(drink_id: str, drinkUpdate: Drink, current_user: 
 
 
 @router.delete("/DeleteDrinkType/{drinkType_id}", tags=["DrinkType"])
-async def deleteDrinktype(drinkType_id: str):
+async def deleteDrinktype(drinkType_id: str,current_user: dict = Depends(get_current_user)):
     return delete_DrinkType(drinkType_id)
 
 
-@router.get("/getUserGroupDrinkType/{user_id}", tags=["Drink"])
-async def get_GroupeddrinkTypeUser(user_id: str):
+@router.get("/getUserGroupDrinkType/", tags=["Drink"])
+async def get_GroupeddrinkTypeUser(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
     return Grouped_Drinks(user_id)
 
 
 @router.post("/newReview/", tags=["Review"])
-async def register_newReview(review: Review):
+async def register_newReview(review: Review,current_user: dict = Depends(get_current_user)):
     response = reviewLog(review)
     return response
 
 
 @router.put("/UpdateReview/{review_id}", tags=["Review"])
-async def Update_Review(review_id: str, ReviewUpdate: Review):
+async def Update_Review(review_id: str, ReviewUpdate: Review, current_user: dict = Depends(get_current_user)):
     response = UpdateReview(review_id, ReviewUpdate)
     return {"message": response}
 
@@ -351,13 +370,15 @@ async def get_reviews():
     return get_plateReviews()
 
 
-@router.get("/Streak/{user_id}", tags=["gaminfication"])
-async def get_streakuser(user_id: str):
+@router.get("/Streak/", tags=["gaminfication"])
+async def get_streakuser(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
     return get_streak(user_id)
 
 
-@router.get("/fivestarReview/{user_id}", tags=["gaminfication"])
-async def get_fivestarReviewuser(user_id: str):
+@router.get("/fivestarReview/", tags=["gaminfication"])
+async def get_fivestarReviewuser(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
     return get_fiveStarReview(user_id)
 
 @router.get("/updateUsersandPlateVerification/", tags=["gamification"])
@@ -366,15 +387,17 @@ def scheduled_verification_task():
     for user in users:
         update_user_plates_to_verified(user['id_user'])  # Access 'id_user' using dictionary key
         update_user_validation(user['id_user'])
-@router.get("/getUserNotifications/{user_id}",tags=["notis"] )
-def getUser_Notifications(user_id: str):
+@router.get("/getUserNotifications/",tags=["notis"] )
+def getUser_Notifications(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
     return getNotis(user_id)
 @router.put("/markNotificationAsRead/{notification_id}", tags=["Review"])
-async def markAsRead(notification_id: str):
+async def markAsRead(notification_id: str, current_user: dict = Depends(get_current_user)):
     response = NotificationRead(notification_id)
     return {"message": response}
-@router.get("/PublicplatesNotFromUser/{user_id}", tags=['Plate'])
-def getNotUser_Publicplates(user_id: str):
+@router.get("/PublicplatesNotFromUser/", tags=['Plate'])
+def getNotUser_Publicplates(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
     response = get_publicPlates_notUser(user_id)
     return response
 @router.post("/addGoal", tags=['gamification'])
@@ -383,7 +406,12 @@ def addGoal_Touser(request: GoalRequest, current_user: dict = Depends(get_curren
     goal_id = request.achivement_id
     response = addGoal(user_id, goal_id)
     return response
-
-
+@router.get("/getRecomendations/{meal_type}", tags=['Food'])
+def get_recomendations(meal_type: int, current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    response = get_recommendations(user_id, meal_type)
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+    return response
 
 
