@@ -3,7 +3,7 @@ from app.models.food import Food
 from app.controllers.user_controller import userLog,addGoal,update_user_info, delete_user_by_id, user_by_id, resetPassword,update_user_validation,get_all_Users
 from app.controllers.userTotCal_controller import get_totcal_day,updateDailyCalories_controller, createUserTotCal, get_TotCal, get_streak
 from app.controllers.food_controller import register_new_food, get_foods, get_food_by_id
-from app.controllers.recomendations_controller import get_recommendations
+from app.controllers.recomendations_controller import get_recommendations,build_daily_menu
 from app.controllers.category_controller import userCategoryLog, get_category, update_category_controller, delete_category
 from app.controllers.catFood_controller import CategoryFoodLog, get_Food_perCat, delete_Catfood, delete_AllCatfoodByCategory
 from app.controllers.plate_controller import get_publicPlates_notUser,update_user_plates_to_verified,plateLog, get_plate_user, delete_plate, update_Plate, get_platebyID, get_publicPlates
@@ -414,4 +414,10 @@ def get_recomendations(meal_type: int, current_user: dict = Depends(get_current_
         raise HTTPException(status_code=500, detail=response["error"])
     return response
 
-
+@router.get("/buildDailyMenu/", tags=['Food'])
+def build_daily_menu_route(current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    response = build_daily_menu(user_id)
+    if "error" in response:
+        raise HTTPException(status_code=500, detail=response["error"])
+    return response
