@@ -29,7 +29,8 @@ from .config import verify_token
 from fastapi.security import HTTPBearer, OAuth2PasswordBearer
 from app.auth import validate_user_id
 from firebase_admin import auth as firebase_auth
-
+from app.models.weeklyPlan import WeeklyPlanRequest
+from app.controllers.weeklyPlan_controller import get_weekly_plan_controller, update_weekly_plan_controller
 auth_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
 
@@ -421,3 +422,21 @@ def build_daily_menu_route(current_user: dict = Depends(get_current_user)):
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return response
+@router.get("/weekly-plan/{week_start}", tags=["WeeklyPlan"])
+async def get_plan(week_start: str, current_user: dict = Depends(get_current_user)):
+    """
+    Obtiene el plan para una semana específica.
+    week_start debe ser formato YYYY-MM-DD (ej: 2025-11-17)
+    """
+    user_id = current_user['uid']
+    return get_weekly_plan_controller(user_id, week_start)
+
+@router.patch("/weekly-plan/{week_start}", tags=["WeeklyPlan"])
+async def update_plan(
+    plan_request: WeeklyPlanRequest, 
+    current_user: dict = Depends(get_current_user)
+):
+    user_id = current_user['uid']
+
+    
+    return update_weekly_plan_controller(user_id, plan_request)
