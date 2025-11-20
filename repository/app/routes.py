@@ -30,7 +30,7 @@ from fastapi.security import HTTPBearer, OAuth2PasswordBearer
 from app.auth import validate_user_id
 from firebase_admin import auth as firebase_auth
 from app.models.weeklyPlan import WeeklyPlanRequest
-from app.controllers.weeklyPlan_controller import get_weekly_plan_controller, update_weekly_plan_controller
+from app.controllers.weeklyPlan_controller import get_weekly_plan_controller, update_weekly_plan_controller,get_shoppingList
 auth_scheme = OAuth2PasswordBearer(tokenUrl="token")
 router = APIRouter()
 
@@ -440,3 +440,9 @@ async def update_plan(
 
     
     return update_weekly_plan_controller(user_id, plan_request)
+@router.get("/shoppingList/{week_start}", tags=["ShoppingList"])
+async def get_shopping_list(week_start: str, current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    shopping_list=get_shoppingList(user_id, week_start)
+    return shopping_list
+
