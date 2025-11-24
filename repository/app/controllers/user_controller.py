@@ -165,8 +165,12 @@ def update_user_validation(user_id: str):
             raise HTTPException(status_code=400, detail=response["error"])
         return response
 
-
+def validateGoal(goal_id):
+    if goal_id < 1 or goal_id > 5:
+        raise HTTPException(
+            status_code=400, detail="Invalid goal ID. It must be between 1 and 5.")
 def addGoal(user_id: str, goal_id: int):
+    validateGoal(goal_id)
     response = complete_goal(user_id, goal_id)
     if "error" in response:
         raise HTTPException(status_code=400, detail=response["error"])

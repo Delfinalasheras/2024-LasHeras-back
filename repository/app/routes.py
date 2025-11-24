@@ -164,35 +164,14 @@ async def get_default_category():
 
 @router.put("/UpdateCategory/{category_id}", tags=["Category"])
 async def update_category(category_id: str, updated_category: Category, current_user: dict = Depends(get_current_user)):
-    print("📥 Received category_id:", category_id)
-    print("📥 Received updated_category:", updated_category.dict())
     user_id = current_user['uid']
     return update_category_controller(user_id, category_id, updated_category)
-
-
-
-# @router.post("/CreateCatFood/", tags=["CatFood"])
-# async def category_log(catFood: CategoryFood,current_user: dict = Depends(get_current_user)):
-#     CategoryFoodLog(catFood)
-#     return {"message": "new categoryFood!"}
-
-
-# @router.get("/GetFoodsPerCategory/{id_Category}", tags=["CatFood"])
-# async def get_Food_Percategory(id_Category: str):
-#     return get_Food_perCat(id_Category)
-
 
 @router.delete("/DeleteCategory/{id_Category}", tags=["Category"])
 async def delete_category_user(id_Category: str,current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
     delete_category(user_id,id_Category)
     return {"message": "Category Delete Succefully!"}
-
-
-# @router.delete("/DeleteCatFood/{id_CatFood}", tags=["CatFood"])
-# async def delete_catFood_user(id_CatFood: str):
-#     delete_Catfood(id_CatFood)
-#     return {"message": "CatFood Delete succefully!"}
 
 #CALORIAS TOTALES
 

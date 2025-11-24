@@ -288,7 +288,10 @@ def complete_goal(user_id, goal_id):
         # Retrieve the user document
         user_ref = db.collection('User').where(
             'id_user', '==', user_id).stream()
-
+        if goal_id is None:
+            return {"error": "Goal ID is required"}
+        if goal_id <=0 and goal_id >8:
+            return {"error": "Invalid Goal ID"}
         # Extract user data from query result
         user_doc = next(user_ref, None)
         if not user_doc:
