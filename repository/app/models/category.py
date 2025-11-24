@@ -1,7 +1,11 @@
 from pydantic import BaseModel, Field
+from typing import List
 
-# Modelo para registrar un nuevo Food
 class Category(BaseModel):
-    name: str
-    icon: str  # Ensure Food_price is non-negative
-    id_User: str
+    name: str = Field(..., min_length=1)
+    icon: str = Field(..., min_length=1)
+    foods: List[str] = Field(..., min_items=1)
+
+    class Config:
+        # Esto facilita la conversión entre ORM (SQLAlchemy) y Pydantic.
+        orm_mode = True

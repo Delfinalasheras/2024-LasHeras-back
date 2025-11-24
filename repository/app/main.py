@@ -6,7 +6,12 @@ app = FastAPI()
 
 # Allow CORS for the frontend
 origins = [
-    "http://localhost:3000",  # Your frontend URL
+    "http://localhost:3000",
+    "https://2024-ranchoaparte-front-ivory.vercel.app",
+    "http://localhost:4201",
+    "https://2024-messidepaul-front.vercel.app"
+
+
 ]
 
 app.add_middleware(

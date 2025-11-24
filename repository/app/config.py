@@ -7,24 +7,32 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-
-# Ensure Firebase is initialized only once
 if not firebase_admin._apps:
     firebase_cred_json = os.getenv('FIREBASECREDENTIALS')
-    firebase_creds_dict= json.loads(firebase_cred_json)
+    firebase_creds_dict = json.loads(firebase_cred_json)
 
     cred = credentials.Certificate(firebase_creds_dict)
     firebase_admin.initialize_app(cred)
 
-# Firestore client
+
 db = firestore.client()
 
-# Authentication (Admin SDK does not use 'getAuth' like the JS SDK)
 auth = firebase_admin.auth
-async def verify_token(token: str):
+
+def verify_token(auth_header: str):
     try:
+        if not auth_header:
+            raise HTTPException(status_code=401, detail="Authorization header missing")
+
+        if not auth_header.startswith("Bearer "):
+            raise HTTPException(status_code=401, detail="Invalid Authorization header format")
+
+        token = auth_header.split(" ")[1]
         decoded_token = auth.verify_id_token(token)
         return decoded_token
+
     except Exception as e:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        print("Error en verify_token:", e)
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+
 

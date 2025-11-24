@@ -1,5 +1,4 @@
 from ..config import db
-from typing import List, Dict, Any
 from datetime import datetime, timedelta
 
 
@@ -34,9 +33,21 @@ def get_user_meals(id_user):
         return {"error": str(e)}
 
 
+def get_meal_by_id(id):
+    try:
+        meal_ref = db.collection('UserFood').document(id)
+        meal_doc = meal_ref.get()
+
+        if meal_doc.exists:
+            return meal_doc.to_dict()
+        else:
+            return None
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def delete_food_user_service(userFood_id):
     try:
-        # Referencia al documento del foodo
         food_ref = db.collection('UserFood').document(userFood_id)
         food_ref.delete()
         return {"message": "user food  delete successful"}
