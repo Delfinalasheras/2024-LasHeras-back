@@ -120,9 +120,6 @@ def get_shoppingList(user_id: str, week_start: str):
 
     return plan
 def group_plates_from_weekly_plan(weekly_plan):
-    """
-    Devuelve: { plate_id: total_amount_eaten }
-    """
     grouped = {}
     for day_name, day_data in weekly_plan["days"].items():
         for meal in ["breakfast", "lunch", "snack", "dinner"]:
@@ -145,7 +142,6 @@ def generate_shopping_list(grouped_plates):
     for plate_id, total_eaten in grouped_plates.items():
 
         plate = getPlateByID(plate_id)['plate']
-        # --- Caso PLATE ---
         if plate and "ingredients" in plate:
             for pf in plate["ingredients"]:
                 print(pf)
@@ -156,7 +152,7 @@ def generate_shopping_list(grouped_plates):
                 food_id = pf["ingredientId"]
                 name = food["name"]
                 measure = food.get("measure")
-                base_amount = pf["quantity"]  # cantidad por porción de plate
+                base_amount = pf["quantity"] 
 
                 total_amount = base_amount * total_eaten
 
@@ -169,7 +165,6 @@ def generate_shopping_list(grouped_plates):
                 else:
                     shopping[food_id]["total_amount"] += total_amount
 
-        # --- Caso FOOD DIRECTO ---
         else:
             food = food_by_id(plate_id)["food"]
             if not food:

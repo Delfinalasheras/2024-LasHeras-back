@@ -387,10 +387,10 @@ def addGoal_Touser(request: GoalRequest, current_user: dict = Depends(get_curren
     goal_id = request.achivement_id
     response = addGoal(user_id, goal_id)
     return response
-@router.get("/getRecomendations/{meal_type}", tags=['Food'])
-def get_recomendations(meal_type: int, current_user: dict = Depends(get_current_user)):
+@router.get("/getRecomendations/", tags=['Food'])
+def get_recomendations( current_user: dict = Depends(get_current_user)):
     user_id = current_user['uid']
-    response = get_recommendations(user_id, meal_type)
+    response = get_recommendations(user_id)
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return response
