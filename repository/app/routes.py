@@ -336,13 +336,15 @@ async def get_GroupeddrinkTypeUser(current_user: dict = Depends(get_current_user
 
 @router.post("/newReview/", tags=["Review"])
 async def register_newReview(review: Review,current_user: dict = Depends(get_current_user)):
-    response = reviewLog(review)
+    user_id = current_user['uid']
+    response = reviewLog(review,user_id)
     return response
 
 
 @router.put("/UpdateReview/{review_id}", tags=["Review"])
 async def Update_Review(review_id: str, ReviewUpdate: Review, current_user: dict = Depends(get_current_user)):
-    response = UpdateReview(review_id, ReviewUpdate)
+    user_id= current_user['uid']
+    response = UpdateReview(review_id, ReviewUpdate,user_id)
     return {"message": response}
 
 
