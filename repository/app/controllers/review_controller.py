@@ -1,41 +1,29 @@
-from app.service.review_service import create_review,update_Review,get_plate_reviews,getamountFiveStarReviews
+from app.service.review_service import create_review,add_comment_logic,get_plate_reviews,getamountFiveStarReviews
 from app.models.review import Review, Comment
 from fastapi import HTTPException
 from datetime import datetime
 from typing import List
  
 
-def validate_comments(comments: List[Comment], current_user_id: str):
-    for comment_data in comments:
-        if comment_data.score is None or comment_data.score <= 0:
-            raise HTTPException(
-                status_code=400, 
-                detail="Cada comentario debe tener una puntuación (score) válida mayor a 0."
-            )
-        if not comment_data.comment or not comment_data.comment.strip():
-             raise HTTPException(
-                status_code=400, 
-                detail="Cada comentario debe tener texto y no puede estar vacío."
-            )
-        if comment_data.id_User != current_user_id:
-            raise HTTPException(
-                status_code=403, 
-                detail="Error de autorización. El ID de usuario en el comentario no coincide con el usuario autenticado."
-            )
-
-    return True
+def validate_newReviw(review, current_user_id: str):
+    "review.score has to be 0 because is a new plate and the list of comments has to be empty"
+    if review.score != 0:
+        raise HTTPException(status_code=400, detail="The score of a new review has to be 0")
+    if review.comments and len(review.comments) > 0:
+        raise HTTPException(status_code=400, detail="The comments list of a new review has to be empty")
+    else:
+        return True
 
 def reviewLog(review: Review, user_id:str):
-    validate_comments(review.comment, user_id)
+    validate_newReviw(review, user_id)
     try:
         review_id = create_review(review)
         return {"message": "User review registered successfully", "id": review_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-def UpdateReview(review_id: str, updated_data: Review, user_id:str):
-    validate_comments(updated_data.comments, user_id)
+def UpdateReview(review_id: str, new_comment: Comment):
     try:
-        message = update_Review(review_id, updated_data)
+        message = add_comment_logic(review_id, new_comment)
         return {"Review": message}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -49,3 +37,4 @@ def get_fiveStarReview(user_id: str):
     if "error" in response:
         raise HTTPException(status_code=500, detail=response["error"])
     return response
+
