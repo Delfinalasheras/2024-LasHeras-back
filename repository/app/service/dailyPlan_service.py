@@ -8,13 +8,12 @@ import random
 from ..config import db # Asumo que importas tu instancia 'db' de algun lado
 
 MEAL_CAL_SPLIT = {
-    1: 0.30,
-    2: 0.50, 
+    1: 0.20,
+    2: 0.30, 
     3: 0.20, 
-    4: 0.45   
+    4: 0.30   
 }
 def load_menu_from_db(user_id: str, date: str):
-    """Carga el menú diario guardado en la base de datos."""
     try:
         user_wp_query = db.collection('DailyMenu').where('id_User', '==', user_id)
         matches = user_wp_query.stream()
@@ -32,7 +31,6 @@ def load_menu_from_db(user_id: str, date: str):
 def save_menu_to_db(user_id: str, date: str):
     try:
         menu_data= build_daily_menu(user_id)
-        print("Generated menu data:", menu_data)
         new_doc = db.collection('DailyMenu').document()
         menu_data['id_User'] = user_id
         menu_data['dia'] = date
@@ -81,24 +79,40 @@ def load_user_daily_data(user_id):
 
 
 
-# CATEGORIAS
 def load_default_categories(foods_only):
     default_cate = get_user_categories("default")["categories"]
     grouped = group_foods_by_default_categories(foods_only, default_cate)
     meat_foods = grouped.get("Meat", [])
     veg_foods = grouped.get("Vegetables", [])
     return meat_foods, veg_foods
-# SELECCIÓN DE PLATOs
 def pick_best_plate(plates_for_meal, limit):
     if not plates_for_meal:
         return None
-    
-    plates_sorted = sorted(plates_for_meal, key=lambda x: x["calories_portion"])
-    valid = [p for p in plates_sorted if p["calories_portion"] <= limit]
+    valid = [p for p in plates_for_meal if p["calories_portion"] <= limit]
 
     if valid:
-        return valid[-1]    # El mayor dentro del límite
-    return plates_sorted[0] # El de menor caloría
+        return random.choice(valid)
+    
+    plates_sorted = sorted(plates_for_meal, key=lambda x: x["calories_portion"])
+    return plates_sorted[0]
+
+def fill_meal_with_foods(menu_list, candidates, limit, current_meal_cal, used_ids):
+    candidates_shuffled = list(candidates)
+    random.shuffle(candidates_shuffled) 
+
+    for c in candidates_shuffled:
+        cal = c["calories_portion"]
+        # Usamos un margen un poco más flexible
+        if current_meal_cal + cal <= limit * 1.15:
+            menu_list.append({"item": c, "amount_eaten": 1})
+            used_ids.add(get_item_id(c))
+            current_meal_cal += cal
+            
+            # Pequeña optimización: si ya nos pasamos del 95% del limite, paramos
+            if current_meal_cal >= limit * 0.95:
+                break
+
+    return current_meal_cal
 # SELECCIÓN CARNE + VEGETAL (ALMUERZO/CENA)
 def pick_meat_veg_combo(meat_foods, veg_foods, foods_for_meal, current_meal_cal, limit):
     foods_ids_for_meal = {f["id_food"] for f in foods_for_meal}
@@ -121,25 +135,11 @@ def pick_meat_veg_combo(meat_foods, veg_foods, foods_for_meal, current_meal_cal,
         return best_meat, best_veg, combined_cal
 
     return None
-# LLENAR COMIDA CON ALIMENTOS
-def fill_meal_with_foods(menu_list, candidates, limit, current_meal_cal, used_ids, total):
-    candidates_sorted = sorted(candidates, key=lambda x: x["calories_portion"], reverse=True)
-
-    for c in candidates_sorted:
-        cal = c["calories_portion"]
-        if current_meal_cal + cal <= limit * 1.10:
-            menu_list.append({"item": c, "amount_eaten": 1})
-            used_ids.add(get_item_id(c))
-            current_meal_cal += cal
-            total += cal
-
-    return current_meal_cal, total
-def scale_meal(menu_list, limit, current_meal_cal, total):
+def scale_meal(menu_list, limit, current_meal_cal):
     if current_meal_cal >= limit * 0.90:
-        return current_meal_cal, total
+        return current_meal_cal
 
     scale_factor = limit / current_meal_cal if current_meal_cal > 0 else 0
-    new_total = total
     new_meal_cal = 0
 
     for item_dict in menu_list:
@@ -147,16 +147,28 @@ def scale_meal(menu_list, limit, current_meal_cal, total):
         cal_per_portion = item["calories_portion"]
         current_amount = item_dict["amount_eaten"]
 
+        # Escalamos
         scaled_amount = round(scale_factor * current_amount)
+        # Limitamos entre 1 y 3 porciones para que sea realista
         new_amount = max(1, min(scaled_amount, 3))
 
-        new_total -= current_amount * cal_per_portion
-        new_total += new_amount * cal_per_portion
+        item_dict["amount_eaten"] = new_amount
         new_meal_cal += new_amount * cal_per_portion
 
-        item_dict["amount_eaten"] = new_amount
+    return new_meal_cal
 
-    return new_meal_cal, new_total
+def calculate_final_menu_calories(menu):
+    total = 0
+    for key, items in menu.items():
+        if not isinstance(items, list): 
+            continue
+            
+        for entry in items:
+            amount = entry.get("amount_eaten", 1)
+            cal_unit = entry["item"].get("calories_portion", 0)
+            total += (amount * cal_unit)
+            print("total acumulado", amount,cal_unit,total)
+    return total
 
 def build_daily_menu(user_id: str):
     data = load_user_daily_data(user_id)
@@ -168,59 +180,64 @@ def build_daily_menu(user_id: str):
 
     used_ids = set()
     menu = {}
-    total = 0
 
     for meal_type, pct in MEAL_CAL_SPLIT.items():
         limit = total_daily_goal * pct
         current_meal_cal = 0
         meal_key = str(meal_type)
-
         foods_for_meal = [f for f in filter_meal(foods_only, meal_type) if get_item_id(f) not in used_ids]
         plates_for_meal = [p for p in filter_meal(plates_only, meal_type) if get_item_id(p) not in used_ids]
 
         menu[meal_key] = []
-
-        # --- 1) Platos primero
         choice = pick_best_plate(plates_for_meal, limit)
         if choice:
             menu[meal_key].append({"item": choice, "amount_eaten": 1})
             used_ids.add(get_item_id(choice))
             current_meal_cal += choice["calories_portion"]
-            total += choice["calories_portion"]
-            continue
-
-        # --- 2) Carne + vegetal
-        if meal_type in (2, 4):
-            combo = pick_meat_veg_combo(meat_foods, veg_foods, foods_for_meal, current_meal_cal, limit)
-            if combo:
-                m, v, combined = combo
-                menu[meal_key] = [
-                    {"item": m, "amount_eaten": 1},
-                    {"item": v, "amount_eaten": 1},
-                ]
-                used_ids.add(get_item_id(m))
-                used_ids.add(get_item_id(v))
-                current_meal_cal += combined
-                total += combined
-
-                # quitar usados
-                foods_for_meal = [f for f in foods_for_meal if get_item_id(f) not in used_ids]
-
-        # --- 3) Agregar alimentos hasta llegar al rango
-        current_meal_cal, total = fill_meal_with_foods(
-            menu[meal_key], foods_for_meal, limit, current_meal_cal, used_ids, total
+        
+        else:
+            combo_found = False
+            if meal_type in (2, 4):
+                combo = pick_meat_veg_combo(meat_foods, veg_foods, foods_for_meal, current_meal_cal, limit)
+                if combo:
+                    m, v, combined = combo
+                    menu[meal_key] = [
+                        {"item": m, "amount_eaten": 1},
+                        {"item": v, "amount_eaten": 1},
+                    ]
+                    used_ids.add(get_item_id(m))
+                    used_ids.add(get_item_id(v))
+                    current_meal_cal += combined
+                    
+                    foods_for_meal = [f for f in foods_for_meal if get_item_id(f) not in used_ids]
+                    combo_found = True
+        
+        # Rellenamos con alimentos extra
+        current_meal_cal = fill_meal_with_foods(
+            menu[meal_key], foods_for_meal, limit, current_meal_cal, used_ids
         )
+        
+        # Escalamos las porciones (aquí amount_eaten pasa a ser 1, 2 o 3)
+        current_meal_cal = scale_meal(menu[meal_key], limit, current_meal_cal)
 
-        # --- 4) Ajustar cantidades si quedó muy bajo
-        current_meal_cal, total = scale_meal(menu[meal_key], limit, current_meal_cal, total)
+    # Calculamos calorías totales usando los multiplicadores actuales
+    final_total_cal = calculate_final_menu_calories(menu)
 
-    # Datos finales
-    menu["total_estimado"] = total
+    for meal_key, items in menu.items():
+
+        if isinstance(items, list): 
+            for entry in items:
+                multiplier = entry.get("amount_eaten", 1)
+            
+                base_measure = float(entry["item"].get("measure_portion", 1))
+                
+                entry["amount_eaten"] = multiplier * base_measure
+
+    menu["total_estimado"] = final_total_cal
     menu["objetivo"] = total_daily_goal
-    menu["cumple_90_por_ciento"] = total >= min_required
+    menu["cumple_90_por_ciento"] = final_total_cal >= min_required
 
     return menu
-
 
 def get_item_id(item):
     return item.get("id_food") or item.get("id") or item.get("plateID")
