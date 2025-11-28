@@ -222,15 +222,16 @@ def build_daily_menu(user_id: str):
 
     # Calculamos calorías totales usando los multiplicadores actuales
     final_total_cal = calculate_final_menu_calories(menu)
+    print("Calorías totales del menú:", final_total_cal)
 
     for meal_key, items in menu.items():
 
         if isinstance(items, list): 
             for entry in items:
                 multiplier = entry.get("amount_eaten", 1)
+                print("multiplier", multiplier)
             
                 base_measure = float(entry["item"].get("measure_portion", 1))
-                
                 entry["amount_eaten"] = multiplier * base_measure
 
     menu["total_estimado"] = final_total_cal

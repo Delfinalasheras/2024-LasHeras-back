@@ -20,7 +20,7 @@ from app.models.userFood import UserFood
 from app.models.plate import Plate
 from app.models.drink import Drink
 from app.models.drinkType import DrinkType
-from app.models.review import Review
+from app.models.review import Review, CommentCreate, Comment
 from app.models.plateFood import PlateFood
 from app.models.userTotCal import UserTotCal, CalUpdateModel
 from app.controllers.foodUser_controller import update_userFood_controller, userFoodLog, get_meals_user, delete_meal
@@ -341,11 +341,20 @@ async def register_newReview(review: Review,current_user: dict = Depends(get_cur
     return response
 
 
-@router.put("/UpdateReview/{review_id}", tags=["Review"])
-async def Update_Review(review_id: str, ReviewUpdate: Review, current_user: dict = Depends(get_current_user)):
-    user_id= current_user['uid']
-    response = UpdateReview(review_id, ReviewUpdate,user_id)
-    return {"message": response}
+@router.put("/AddComment/{review_id}", tags=["Review"])
+async def add_review_comment(review_id: str, new_comment_data: CommentCreate, current_user: dict = Depends(get_current_user)):
+    user_id = current_user['uid']
+    safe_comment = Comment(
+        comment=new_comment_data.comment,
+        score=new_comment_data.score,
+        id_User=user_id
+    )
+
+    try:
+        response = UpdateReview(review_id, safe_comment)
+        return {"message": response}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/PlateReviews/", tags=["Review"])

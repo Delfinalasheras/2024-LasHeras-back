@@ -7,12 +7,6 @@ from app.service.drink_service import drinks
 from app.service.plate_service import get_plates
 
 
-def validate_date(date, label):
-    if date.date() > datetime.now().date():
-        raise HTTPException(
-            status_code=400, detail=f"{label} must be a date in the past.")
-
-
 def validate_limit(campo, minimo, label):
     if type(campo) is not float:
         raise HTTPException(
@@ -23,7 +17,6 @@ def validate_limit(campo, minimo, label):
 
 
 def validate_foodLog(userFood: UserFood):
-    validate_date(userFood.date_ingested, 'Ingested date')
     validate_limit(userFood.amount_eaten, 0, 'amount eaten')
 
 
